@@ -1,5 +1,5 @@
-const axios = require('axios');
-const Listing = require('../models/Listing');
+import axios from 'axios';
+import Listing from '../models/Listing.js';
 
 async function ingestListings() {
   const response = await axios.get('https://www.arbeitnow.com/api/job-board-api');
@@ -24,4 +24,4 @@ async function ingestListings() {
   console.log(`Ingested ${jobs.length} listings`);
 }
 
-module.exports = ingestListings;
+export default ingestListings;

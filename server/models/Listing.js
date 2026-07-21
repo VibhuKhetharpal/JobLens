@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const listingSchema = new mongoose.Schema({
   title: String,
@@ -11,4 +11,4 @@ const listingSchema = new mongoose.Schema({
   externalId: { type: String, unique: true }
 });
 
-module.exports = mongoose.model('Listing', listingSchema);
+export default mongoose.model('Listing', listingSchema);

@@ -1,10 +1,8 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const listingsRoutes = require('./routes/listings');
-app.use('/api', listingsRoutes);
-
+import 'dotenv/config';
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import listingsRoutes from './routes/listings.js';
 
 const app = express();
 app.use(cors());
@@ -13,6 +11,8 @@ app.use(express.json());
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
+
+app.use('/api', listingsRoutes);
 
 app.get('/', (req, res) => res.send('JobLens API running'));
 
