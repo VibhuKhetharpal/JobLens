@@ -18,4 +18,14 @@ router.get('/ingest', async (req, res) => {
   }
 });
 
+router.get('/trends/skills', async (req, res) => {
+  const trends = await Listing.aggregate([
+    { $unwind: '$tags' },
+    { $group: { _id: '$tags', count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 10 }
+  ]);
+  res.json(trends);
+});
+
 export default router;
