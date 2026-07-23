@@ -31,6 +31,45 @@ router.get('/trends/remote-split', async (req, res) => {
   ]);
   res.json(split);
 });
+router.get('/trends/companies', async (req, res) => {
+  const companies = await Listing.aggregate([
+    { $group: { _id: '$company', count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 10 }
+  ]);
+  res.json(companies);
+});
+router.get('/trends/skill-pairs', async (req, res) => {
+  const pairs = await Listing.aggregate([
+    { $unwind: '$tags' },
+    { $group: { _id: '$_id', tags: { $push: '$tags' } } },
+    { $project: {
+        pairs: {
+          $filter: {
+            input: { $reduce: {
+              input: '$tags',
+              initialValue: [],
+              in: { $concatArrays: ['$$value', { $map: {
+                input: '$tags',
+                as: 't',
+                in: { $concatArrays: [['$$this'], ['$$t']] }
+              }}]}
+            }},
+            cond: { $ne: [{ $arrayElemAt: ['$$this', 0] }, { $arrayElemAt: ['$$this', 1] }] }
+          }
+        }
+    }}
+  ]);
+  res.json(pairs);
+});
+router.get('/trends/companies', async (req, res) => {
+  const companies = await Listing.aggregate([
+    { $group: { _id: '$company', count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 10 }
+  ]);
+  res.json(companies);
+});
 
 router.get('/trends/skills', async (req, res) => {
   const trends = await Listing.aggregate([
