@@ -9,14 +9,16 @@ function Listings() {
   }, []);
 
   return (
-    <div className="section">
-      <h2>Listings</h2>
-      {listings.map(job => (
-        <div className="job-card" key={job._id}>
-          <div className="job-title">{job.title}</div>
-          <div className="job-meta">{job.company} — {job.location}</div>
-        </div>
-      ))}
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+      <h2 className="text-base font-semibold text-gray-200 mb-4">Listings</h2>
+      <div className="divide-y divide-gray-800">
+        {listings.map(job => (
+          <div key={job._id} className="py-3">
+            <div className="text-gray-100 font-medium">{job.title}</div>
+            <div className="text-gray-400 text-sm">{job.company} — {job.location}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
