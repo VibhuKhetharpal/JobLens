@@ -1,6 +1,21 @@
 import axios from 'axios';
 import Listing from '../models/Listing.js';
+import { EventEmitter } from 'events';
+export const pipelineEvents = new EventEmitter();
 
+async function ingestListings() {
+  pipelineEvents.emit('ingestion:started');
+
+  const response = await axios.get('https://www.arbeitnow.com/api/job-board-api');
+  const jobs = response.data.data;
+
+  for (const job of jobs) {
+    await Listing.findOneAndUpdate(/* ...unchanged... */);
+  }
+
+  pipelineEvents.emit('ingestion:completed', { count: jobs.length });
+  console.log(`Ingested ${jobs.length} listings`);
+}
 async function ingestListings() {
   const response = await axios.get('https://www.arbeitnow.com/api/job-board-api');
   const jobs = response.data.data;

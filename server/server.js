@@ -5,6 +5,10 @@ import cors from 'cors';
 import cron from 'node-cron';
 import listingsRoutes from './routes/listings.js';
 import ingestListings from './services/ingest.js';
+import { pipelineEvents } from './services/ingest.js';
+
+pipelineEvents.on('ingestion:started', () => console.log('[Event] Ingestion started'));
+pipelineEvents.on('ingestion:completed', (data) => console.log(`[Event] Ingestion completed — ${data.count} listings processed`));
 
 const app = express();
 app.use(cors());
