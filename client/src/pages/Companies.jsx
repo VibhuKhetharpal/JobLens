@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 function Companies() {
   const [companies, setCompanies] = useState([]);
@@ -11,13 +12,14 @@ function Companies() {
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
       <h2 className="text-base font-semibold text-gray-200 mb-4">Top Hiring Companies</h2>
-      <div className="flex flex-wrap gap-2">
-        {companies.map(c => (
-          <span key={c._id} className="bg-fuchsia-500/10 text-fuchsia-300 text-sm px-3 py-1 rounded-full border border-fuchsia-500/20">
-            {c._id} <span className="text-fuchsia-500">({c.count})</span>
-          </span>
-        ))}
-      </div>
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={companies} layout="vertical">
+          <XAxis type="number" stroke="#888" fontSize={12} />
+          <YAxis dataKey="_id" type="category" stroke="#888" fontSize={12} width={140} interval={0} />
+          <Tooltip contentStyle={{ background: '#111', border: '1px solid #333' }} />
+          <Bar dataKey="count" fill="#e879f9" radius={[0, 6, 6, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }
