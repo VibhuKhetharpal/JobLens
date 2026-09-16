@@ -37,16 +37,31 @@ function extractSkills(text = '') {
 function normalizeCity(rawLocation = '', isRemote = false) {
   if (isRemote) return 'Remote';
   const loc = rawLocation.toLowerCase();
-  if (loc.includes('bangalore') || loc.includes('bengaluru')) return 'Bengaluru';
-  if (loc.includes('hyderabad') || loc.includes('secunderabad')) return 'Hyderabad';
+
+  // Direct remote checks
+  if (loc.includes('remote') || loc.includes('work from home') || loc.includes('wfh')) return 'Remote';
+
+  // Major tech cities
+  if (loc.includes('bangalore') || loc.includes('bengaluru') || loc.includes('karnataka')) return 'Bengaluru';
+  if (loc.includes('hyderabad') || loc.includes('secunderabad') || loc.includes('telangana') || loc.includes('andhra')) return 'Hyderabad';
   if (loc.includes('pune')) return 'Pune';
-  if (loc.includes('gurgaon') || loc.includes('gurugram') || loc.includes('noida') || loc.includes('delhi') || loc.includes('ghaziabad')) return 'Delhi-NCR';
   if (loc.includes('mumbai') || loc.includes('navi mumbai') || loc.includes('thane')) return 'Mumbai';
-  if (loc.includes('chennai')) return 'Chennai';
-  if (loc.includes('kolkata')) return 'Kolkata';
-  if (loc.includes('remote') || loc.includes('work from home')) return 'Remote';
+  if (
+    loc.includes('gurgaon') || loc.includes('gurugram') || loc.includes('noida') ||
+    loc.includes('delhi') || loc.includes('ghaziabad') || loc.includes('faridabad') ||
+    loc.includes('haryana') || loc.includes('uttar pradesh') || loc.includes('ncr')
+  ) return 'Delhi-NCR';
+  if (loc.includes('chennai') || loc.includes('tamil nadu')) return 'Chennai';
+  if (loc.includes('kolkata') || loc.includes('west bengal')) return 'Kolkata';
+  if (loc.includes('ahmedabad') || loc.includes('gujarat')) return 'Ahmedabad';
+  if (loc.includes('kochi') || loc.includes('cochin') || loc.includes('trivandrum') || loc.includes('kerala')) return 'Kochi';
+  if (loc.includes('chandigarh') || loc.includes('punjab')) return 'Chandigarh';
+  if (loc.includes('jaipur') || loc.includes('rajasthan')) return 'Jaipur';
+  if (loc.includes('maharashtra')) return 'Pune';
+
   return 'India';
 }
+
 
 function formatLpa(min, max) {
   if (!min && !max) return null;
@@ -401,13 +416,38 @@ const SEED_INDIAN_LISTINGS = [
   }
 ];
 
-async function ingestFromAdzuna(appId, appKey) {
-  const url = `https://api.adzuna.com/v1/api/jobs/in/search/1?app_id=${appId}&app_key=${appKey}&results_per_page=50&what=software%20developer&content-type=application/json`;
-  const response = await axios.get(url, { timeout: 10000 });
-  const rawJobs = response.data?.results || [];
+const ROLE_QUERIES = [
+  'software developer',
+  'frontend developer',
+  'backend developer',
+  'full stack developer',
+  'devops engineer',
+  'data scientist'
+];
 
-  return rawJobs.map(job => {
-    const isRemote = /remote|work from home/i.test((job.title || '') + ' ' + (job.description || '') + ' ' + (job.location?.display_name || ''));
+async function ingestFromAdzuna(appId, appKey) {
+  const allRawJobs = [];
+  const seenIds = new Set();
+
+  for (const role of ROLE_QUERIES) {
+    try {
+      const url = `https://api.adzuna.com/v1/api/jobs/in/search/1?app_id=${appId}&app_key=${appKey}&results_per_page=25&what=${encodeURIComponent(role)}&content-type=application/json`;
+      const response = await axios.get(url, { timeout: 10000 });
+      const results = response.data?.results || [];
+
+      for (const job of results) {
+        if (!seenIds.has(job.id)) {
+          seenIds.add(job.id);
+          allRawJobs.push(job);
+        }
+      }
+    } catch (err) {
+      console.warn(`[Adzuna] Query failed for role "${role}":`, err.message);
+    }
+  }
+
+  return allRawJobs.map(job => {
+    const isRemote = /remote|work from home|wfh/i.test((job.title || '') + ' ' + (job.description || '') + ' ' + (job.location?.display_name || ''));
     const city = normalizeCity(job.location?.display_name || '', isRemote);
     const tags = extractSkills((job.title || '') + ' ' + (job.description || ''));
 
@@ -437,14 +477,26 @@ async function ingestFromAdzuna(appId, appKey) {
 async function ingestListings() {
   pipelineEvents.emit('ingestion:started');
 
-  // Purge any old German arbeitnow listings from the database
+  // 1. Purge legacy German listings
   try {
-    const deleted = await Listing.deleteMany({ source: 'arbeitnow' });
-    if (deleted.deletedCount > 0) {
-      console.log(`[Ingest] Purged ${deleted.deletedCount} legacy German listings.`);
+    const deletedLegacy = await Listing.deleteMany({ source: 'arbeitnow' });
+    if (deletedLegacy.deletedCount > 0) {
+      console.log(`[Ingest] Purged ${deletedLegacy.deletedCount} legacy German listings.`);
     }
   } catch (err) {
-    console.warn('[Ingest] Cleanup of legacy listings notice:', err.message);
+    console.warn('[Ingest] Cleanup legacy listings notice:', err.message);
+  }
+
+  // 2. TTL Cleanup: Remove postings older than 45 days
+  try {
+    const STALE_DAYS = 45;
+    const staleThreshold = new Date(Date.now() - STALE_DAYS * 24 * 60 * 60 * 1000);
+    const deletedStale = await Listing.deleteMany({ postedDate: { $lt: staleThreshold } });
+    if (deletedStale.deletedCount > 0) {
+      console.log(`[Ingest] Purged ${deletedStale.deletedCount} stale jobs older than ${STALE_DAYS} days.`);
+    }
+  } catch (err) {
+    console.warn('[Ingest] Stale cleanup notice:', err.message);
   }
 
   let jobsToIngest = [];
@@ -453,9 +505,9 @@ async function ingestListings() {
 
   if (appId && appKey) {
     try {
-      console.log('Fetching live Indian tech jobs from Adzuna API...');
+      console.log('Fetching live Indian tech jobs across multiple roles from Adzuna API...');
       jobsToIngest = await ingestFromAdzuna(appId, appKey);
-      console.log(`Fetched ${jobsToIngest.length} jobs from Adzuna India`);
+      console.log(`Fetched ${jobsToIngest.length} distinct jobs from Adzuna India`);
     } catch (err) {
       console.warn(`Adzuna API call failed (${err.message}). Falling back to curated Indian tech seed data.`);
       jobsToIngest = SEED_INDIAN_LISTINGS;

@@ -4,22 +4,49 @@ import os from 'os';
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import cron from 'node-cron';
 import listingsRoutes from './routes/listings.js';
 import ingestListings, { pipelineEvents } from './services/ingest.js';
 
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/joblens';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/JobLens';
 const ENABLE_CLUSTER = process.env.CLUSTER === 'true';
+
+// General API Rate Limiter
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 mins
+  limit: 300,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Too many requests from this IP, please try again later.' }
+});
+
+// Stricter limiter for ingest triggers to preserve external API quota
+const ingestLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 8,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: 'Ingestion rate limit reached. Please wait before syncing again.' }
+});
 
 // Pipeline logging listeners
 pipelineEvents.on('ingestion:started', () => console.log('[Event] Ingestion started'));
 pipelineEvents.on('ingestion:completed', (data) => console.log(`[Event] Ingestion completed — ${data.count} listings processed`));
 
-function startWorkerServer() {
-  const app = express();
+function setupMiddleware(app) {
+  app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cors());
   app.use(express.json());
+  app.use('/api/ingest', ingestLimiter);
+  app.use('/api', apiLimiter);
+}
+
+function startWorkerServer() {
+  const app = express();
+  setupMiddleware(app);
 
   mongoose.connect(MONGO_URI)
     .then(() => console.log(`[Server] Worker ${process.pid}: MongoDB connected`))
@@ -30,6 +57,7 @@ function startWorkerServer() {
 
   app.listen(PORT, () => console.log(`[Server] Worker ${process.pid} listening on port ${PORT}`));
 }
+
 
 if (ENABLE_CLUSTER && cluster.isPrimary) {
   const numCPUs = Math.min(os.cpus().length, 4); // Limit to reasonable worker count
@@ -65,8 +93,7 @@ if (ENABLE_CLUSTER && cluster.isPrimary) {
 } else {
   // Single process mode (clean dev & standard deployments)
   const app = express();
-  app.use(cors());
-  app.use(express.json());
+  setupMiddleware(app);
 
   mongoose.connect(MONGO_URI)
     .then(async () => {

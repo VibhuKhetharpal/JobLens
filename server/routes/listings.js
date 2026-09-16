@@ -1,13 +1,23 @@
 import express from 'express';
+import NodeCache from 'node-cache';
 import Listing from '../models/Listing.js';
-import ingestListings from '../services/ingest.js';
+import ingestListings, { pipelineEvents } from '../services/ingest.js';
 
 const router = express.Router();
+const trendsCache = new NodeCache({ stdTTL: 900 }); // 15-minute TTL
 
-// GET /api/listings with optional search, city, tag, and remote filters
+// Invalidate trends cache whenever a new ingestion completes
+pipelineEvents.on('ingestion:completed', () => {
+  console.log('[Cache] Ingestion completed — flushing trends cache');
+  trendsCache.flushAll();
+});
+
+export const clearTrendsCache = () => trendsCache.flushAll();
+
+// GET /api/listings with optional search, city, tag, minLpa, and remote filters
 router.get('/listings', async (req, res) => {
   try {
-    const { search, city, tag, remote, limit = 50, page = 1 } = req.query;
+    const { search, city, tag, remote, minLpa, limit = 50, page = 1 } = req.query;
     const filter = { source: { $ne: 'arbeitnow' } };
 
     if (search) {
@@ -29,6 +39,17 @@ router.get('/listings', async (req, res) => {
       filter.tags = tag;
     }
 
+    if (minLpa && Number(minLpa) > 0) {
+      const minSalaryInr = Number(minLpa) * 100000;
+      filter.$and = filter.$and || [];
+      filter.$and.push({
+        $or: [
+          { salaryMin: { $gte: minSalaryInr } },
+          { salaryMax: { $gte: minSalaryInr } }
+        ]
+      });
+    }
+
     const pageSize = Math.min(Math.max(parseInt(limit) || 50, 1), 100);
     const skip = (Math.max(parseInt(page) || 1, 1) - 1) * pageSize;
 
@@ -43,6 +64,7 @@ router.get('/listings', async (req, res) => {
   }
 });
 
+
 // Trigger ingestion manually
 router.get('/ingest', async (req, res) => {
   try {
@@ -56,12 +78,16 @@ router.get('/ingest', async (req, res) => {
 // Top Indian Tech Hubs (Cities)
 router.get('/trends/locations', async (req, res) => {
   try {
+    const cached = trendsCache.get('locations');
+    if (cached) return res.json(cached);
+
     const locations = await Listing.aggregate([
       { $match: { city: { $ne: null } } },
       { $group: { _id: '$city', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 }
     ]);
+    trendsCache.set('locations', locations);
     res.json(locations);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -71,9 +97,13 @@ router.get('/trends/locations', async (req, res) => {
 // Remote vs Onsite distribution
 router.get('/trends/remote-split', async (req, res) => {
   try {
+    const cached = trendsCache.get('remote-split');
+    if (cached) return res.json(cached);
+
     const split = await Listing.aggregate([
       { $group: { _id: '$remote', count: { $sum: 1 } } }
     ]);
+    trendsCache.set('remote-split', split);
     res.json(split);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -83,11 +113,15 @@ router.get('/trends/remote-split', async (req, res) => {
 // Top Hiring Companies (single route, no duplicate)
 router.get('/trends/companies', async (req, res) => {
   try {
+    const cached = trendsCache.get('companies');
+    if (cached) return res.json(cached);
+
     const companies = await Listing.aggregate([
       { $group: { _id: '$company', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 }
     ]);
+    trendsCache.set('companies', companies);
     res.json(companies);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -97,12 +131,16 @@ router.get('/trends/companies', async (req, res) => {
 // Top Skills in demand
 router.get('/trends/skills', async (req, res) => {
   try {
+    const cached = trendsCache.get('skills');
+    if (cached) return res.json(cached);
+
     const trends = await Listing.aggregate([
       { $unwind: '$tags' },
       { $group: { _id: '$tags', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 }
     ]);
+    trendsCache.set('skills', trends);
     res.json(trends);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -112,6 +150,9 @@ router.get('/trends/skills', async (req, res) => {
 // Salary benchmark trends in INR LPA by city
 router.get('/trends/salaries', async (req, res) => {
   try {
+    const cached = trendsCache.get('salaries');
+    if (cached) return res.json(cached);
+
     const salaryByCity = await Listing.aggregate([
       {
         $match: {
@@ -147,6 +188,7 @@ router.get('/trends/salaries', async (req, res) => {
       { $sort: { avgLpa: -1 } },
       { $limit: 8 }
     ]);
+    trendsCache.set('salaries', salaryByCity);
     res.json(salaryByCity);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -156,6 +198,9 @@ router.get('/trends/salaries', async (req, res) => {
 // Frequently paired tech skills co-occurrence
 router.get('/trends/skill-pairs', async (req, res) => {
   try {
+    const cached = trendsCache.get('skill-pairs');
+    if (cached) return res.json(cached);
+
     const pairs = await Listing.aggregate([
       { $match: { 'tags.1': { $exists: true } } },
       { $project: { tags: 1 } },
@@ -183,6 +228,7 @@ router.get('/trends/skill-pairs', async (req, res) => {
       { $sort: { count: -1 } },
       { $limit: 8 }
     ]);
+    trendsCache.set('skill-pairs', pairs);
     res.json(pairs);
   } catch (err) {
     res.status(500).json({ error: err.message });
