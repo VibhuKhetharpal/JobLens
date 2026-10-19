@@ -62,7 +62,7 @@ function Overview() {
         <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-4">
           <div className="text-gray-400 text-xs font-medium">Tracked Jobs</div>
           <div className="text-2xl font-bold text-white mt-1">{totalJobs}</div>
-          <div className="text-[11px] text-emerald-400 mt-0.5">🇮🇳 Pan-India Tech</div>
+          <div className="text-[11px] text-emerald-400 mt-0.5">Pan-India Tech</div>
         </div>
 
         <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-4">
@@ -87,7 +87,7 @@ function Overview() {
       {/* Top Skills Chart */}
       <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-6 shadow-sm">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-sm font-semibold text-gray-200">🔥 Top Tech Stacks & Skills in India</h2>
+          <h2 className="text-sm font-semibold text-gray-200">Top Tech Stacks & Skills in India</h2>
           <span className="text-xs text-gray-500">Frequency across active job postings</span>
         </div>
         <ResponsiveContainer width="100%" height={280}>
@@ -115,7 +115,7 @@ function Overview() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Locations */}
         <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-200 mb-4">📍 Openings by Indian Tech Hub</h2>
+          <h2 className="text-sm font-semibold text-gray-200 mb-4">Openings by Indian Tech Hub</h2>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={locations} layout="vertical" margin={{ top: 5, right: 20, bottom: 5, left: 10 }}>
               <XAxis type="number" stroke="#6b7280" fontSize={12} />
@@ -132,7 +132,7 @@ function Overview() {
         {/* Salary Benchmarks */}
         <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-6 shadow-sm">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-sm font-semibold text-gray-200">💰 Average Tech Salary (₹ LPA)</h2>
+            <h2 className="text-sm font-semibold text-gray-200">Average Tech Salary (₹ LPA)</h2>
             <span className="text-xs text-purple-400 font-medium">In Lakhs / year</span>
           </div>
           {salaryTrends.length > 0 ? (
@@ -160,7 +160,7 @@ function Overview() {
         <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-sm font-semibold text-gray-200">⚡ Frequently Paired Tech Skills</h2>
+              <h2 className="text-sm font-semibold text-gray-200">Frequently Paired Tech Skills</h2>
               <p className="text-xs text-gray-400 mt-0.5">Technologies recruiters look for together in candidate profiles</p>
             </div>
             <span className="text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded">

@@ -42,7 +42,7 @@ function Companies() {
       {topThree.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
           {topThree.map((comp, idx) => {
-            const medals = ['🥇 Top Recruiter', '🥈 Runner Up', '🥉 High Volume'];
+            const medals = ['Top Recruiter', 'Runner Up', 'High Volume'];
             const colors = [
               'border-amber-500/30 bg-amber-500/5 text-amber-400',
               'border-slate-400/30 bg-slate-400/5 text-slate-300',
@@ -72,7 +72,7 @@ function Companies() {
       <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-6 shadow-sm">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-sm font-semibold text-gray-200">🏢 Top Hiring Tech Companies in India</h2>
+            <h2 className="text-sm font-semibold text-gray-200">Top Hiring Tech Companies in India</h2>
             <p className="text-xs text-gray-400 mt-0.5">Companies with the highest volume of active software job listings</p>
           </div>
           <span className="text-xs text-fuchsia-400 bg-fuchsia-500/10 border border-fuchsia-500/20 px-2.5 py-0.5 rounded-full font-medium">

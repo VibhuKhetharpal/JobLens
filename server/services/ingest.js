@@ -7,11 +7,12 @@ export const pipelineEvents = new EventEmitter();
 // Common tech keywords to extract from job title and description
 const TECH_KEYWORDS = [
   'React', 'Next.js', 'Vue', 'Angular', 'TypeScript', 'JavaScript', 'Tailwind',
-  'Node.js', 'Express', 'Python', 'Django', 'FastAPI', 'Java', 'Spring Boot',
-  'Go', 'Golang', 'Rust', 'C++', 'C#', '.NET', 'PHP',
+  'Node.js', 'Express', 'Python', 'Django', 'FastAPI', 'Flask', 'Java', 'Spring Boot',
+  'Go', 'Golang', 'Rust', 'C++', 'C', 'C#', '.NET', 'PHP',
   'SQL', 'PostgreSQL', 'MongoDB', 'Redis', 'MySQL', 'Kafka', 'Elasticsearch', 'GraphQL',
   'AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'CI/CD', 'Terraform', 'Linux',
-  'Machine Learning', 'Deep Learning', 'PyTorch', 'TensorFlow', 'AI', 'GenAI', 'LLM'
+  'Machine Learning', 'Deep Learning', 'PyTorch', 'TensorFlow', 'Scikit-learn', 'NLP', 'AI', 'GenAI', 'LLM',
+  'System Design', 'Microservices', 'REST APIs', 'DPDK', 'Networking', 'Data Engineering'
 ];
 
 function extractSkills(text = '') {
@@ -30,8 +31,10 @@ function extractSkills(text = '') {
   if (/\b(js|es6)\b/i.test(lower) && !found.has('JavaScript')) found.add('JavaScript');
   if (/\bts\b/i.test(lower) && !found.has('TypeScript')) found.add('TypeScript');
   if (/\b(k8s)\b/i.test(lower) && !found.has('Kubernetes')) found.add('Kubernetes');
+  if (/\b(rest|restful)\b/i.test(lower) && !found.has('REST APIs')) found.add('REST APIs');
+  if (/\b(ml)\b/i.test(lower) && !found.has('Machine Learning')) found.add('Machine Learning');
 
-  return Array.from(found).slice(0, 7);
+  return Array.from(found).slice(0, 8);
 }
 
 function normalizeCity(rawLocation = '', isRemote = false) {
@@ -422,7 +425,9 @@ const ROLE_QUERIES = [
   'backend developer',
   'full stack developer',
   'devops engineer',
-  'data scientist'
+  'data scientist',
+  'software intern',
+  'developer intern'
 ];
 
 async function ingestFromAdzuna(appId, appKey) {

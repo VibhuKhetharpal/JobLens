@@ -23,7 +23,8 @@ router.get('/listings', async (req, res) => {
     if (search) {
       filter.$or = [
         { title: { $regex: search, $options: 'i' } },
-        { company: { $regex: search, $options: 'i' } }
+        { company: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
       ];
     }
 

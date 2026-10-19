@@ -132,13 +132,12 @@ function Listings() {
       <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-4 space-y-3.5 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <span className="absolute left-3 top-2.5 text-gray-500 text-sm">🔍</span>
             <input
               type="text"
               placeholder="Search by role, company, or tech (e.g. React, Java, Zomato)..."
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full bg-gray-950 border border-gray-800 rounded-lg pl-9 pr-4 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition"
+              className="w-full bg-gray-950 border border-gray-800 rounded-lg px-4 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition"
             />
             {search && (
               <button
@@ -183,7 +182,6 @@ function Listings() {
                 : 'bg-gray-950 border-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-700'
             }`}
           >
-            <span>⭐</span>
             <span>Saved ({bookmarks.length})</span>
           </button>
         </div>
@@ -278,7 +276,7 @@ function Listings() {
                     <div className="text-gray-400 text-xs flex flex-wrap items-center gap-2">
                       <span className="font-semibold text-gray-200">{job.company}</span>
                       <span>•</span>
-                      <span className="text-gray-300">📍 {job.location || job.city || 'India'}</span>
+                      <span className="text-gray-300">{job.location || job.city || 'India'}</span>
                       {job.postedDate && (
                         <>
                           <span>•</span>
@@ -363,7 +361,7 @@ function Listings() {
             disabled={loadingMore}
             className="px-6 py-2.5 bg-gray-900 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 text-gray-200 text-xs font-semibold rounded-xl shadow-sm transition disabled:opacity-50"
           >
-            {loadingMore ? 'Loading more jobs...' : 'Load More Jobs ⬇'}
+            {loadingMore ? 'Loading more jobs...' : 'Load More Jobs'}
           </button>
         </div>
       )}
@@ -371,7 +369,6 @@ function Listings() {
       {/* Empty State */}
       {!loading && displayedListings.length === 0 && (
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-12 text-center space-y-3">
-          <span className="text-4xl">{showSavedOnly ? '⭐' : '🔎'}</span>
           <h4 className="text-gray-200 font-semibold text-base">
             {showSavedOnly ? 'No saved jobs yet' : 'No listings match your search criteria'}
           </h4>
@@ -406,7 +403,7 @@ function Listings() {
                 <div className="space-y-1 pr-4">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded font-medium">
-                      🇮🇳 {activeJob.city || 'India'}
+                      {activeJob.city || 'India'}
                     </span>
                     {activeJob.remote && (
                       <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-medium">
@@ -421,7 +418,7 @@ function Listings() {
                   </div>
                   <h2 className="text-xl font-black text-white pt-1">{activeJob.title}</h2>
                   <div className="text-sm font-semibold text-gray-300">{activeJob.company}</div>
-                  <div className="text-xs text-gray-500">📍 {activeJob.location || activeJob.city}</div>
+                  <div className="text-xs text-gray-500">{activeJob.location || activeJob.city}</div>
                 </div>
 
                 <button

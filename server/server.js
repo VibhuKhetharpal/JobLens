@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cron from 'node-cron';
 import listingsRoutes from './routes/listings.js';
+import analyzeRoutes from './routes/analyze.js';
 import ingestListings, { pipelineEvents } from './services/ingest.js';
 
 const PORT = process.env.PORT || 5000;
@@ -53,6 +54,7 @@ function startWorkerServer() {
     .catch(err => console.error(`[Server] Worker ${process.pid}: MongoDB connection error:`, err));
 
   app.use('/api', listingsRoutes);
+  app.use('/api', analyzeRoutes);
   app.get('/', (req, res) => res.send('JobLens India API running'));
 
   app.listen(PORT, () => console.log(`[Server] Worker ${process.pid} listening on port ${PORT}`));
@@ -104,6 +106,7 @@ if (ENABLE_CLUSTER && cluster.isPrimary) {
     .catch(err => console.error('MongoDB connection error:', err));
 
   app.use('/api', listingsRoutes);
+  app.use('/api', analyzeRoutes);
   app.get('/', (req, res) => res.send('JobLens India API running'));
 
   // Scheduled ingestion every 6 hours
