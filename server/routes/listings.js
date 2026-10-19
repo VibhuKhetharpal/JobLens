@@ -14,6 +14,9 @@ pipelineEvents.on('ingestion:completed', () => {
 
 export const clearTrendsCache = () => trendsCache.flushAll();
 
+const GENERIC_TAGS = ['Software Engineering', 'IT Jobs', 'Information Technology'];
+
+
 // GET /api/listings with optional search, city, tag, minLpa, and remote filters
 router.get('/listings', async (req, res) => {
   try {
@@ -83,7 +86,7 @@ router.get('/trends/locations', async (req, res) => {
     if (cached) return res.json(cached);
 
     const locations = await Listing.aggregate([
-      { $match: { city: { $ne: null } } },
+      { $match: { city: { $nin: ['India', null, ''] } } },
       { $group: { _id: '$city', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 }
@@ -118,6 +121,7 @@ router.get('/trends/companies', async (req, res) => {
     if (cached) return res.json(cached);
 
     const companies = await Listing.aggregate([
+      { $match: { company: { $nin: ['Confidential', null, ''] } } },
       { $group: { _id: '$company', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 }
@@ -137,6 +141,7 @@ router.get('/trends/skills', async (req, res) => {
 
     const trends = await Listing.aggregate([
       { $unwind: '$tags' },
+      { $match: { tags: { $nin: GENERIC_TAGS } } },
       { $group: { _id: '$tags', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 }
@@ -204,16 +209,36 @@ router.get('/trends/skill-pairs', async (req, res) => {
 
     const pairs = await Listing.aggregate([
       { $match: { 'tags.1': { $exists: true } } },
-      { $project: { tags: 1 } },
-      { $unwind: '$tags' },
+      {
+        $project: {
+          cleanTags: {
+            $filter: {
+              input: '$tags',
+              as: 't',
+              cond: { $not: { $in: ['$$t', GENERIC_TAGS] } }
+            }
+          }
+        }
+      },
+      { $match: { 'cleanTags.1': { $exists: true } } },
+      { $unwind: '$cleanTags' },
       {
         $lookup: {
           from: 'listings',
-          let: { currentId: '$_id', currentTag: '$tags' },
+          let: { currentId: '$_id', currentTag: '$cleanTags' },
           pipeline: [
             { $match: { $expr: { $eq: ['$_id', '$$currentId'] } } },
             { $unwind: '$tags' },
-            { $match: { $expr: { $gt: ['$tags', '$$currentTag'] } } },
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $gt: ['$tags', '$$currentTag'] },
+                    { $not: { $in: ['$tags', GENERIC_TAGS] } }
+                  ]
+                }
+              }
+            },
             { $project: { pairedTag: '$tags', _id: 0 } }
           ],
           as: 'pairs'
@@ -222,7 +247,7 @@ router.get('/trends/skill-pairs', async (req, res) => {
       { $unwind: '$pairs' },
       {
         $group: {
-          _id: { $concat: ['$tags', ' + ', '$pairs.pairedTag'] },
+          _id: { $concat: ['$cleanTags', ' + ', '$pairs.pairedTag'] },
           count: { $sum: 1 }
         }
       },
