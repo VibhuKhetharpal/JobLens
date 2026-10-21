@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://joblens-api.onrender.com/api/:path*"
+      "destination": "https://joblens-2-ahiu.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
