@@ -10,6 +10,12 @@ import cron from 'node-cron';
 import listingsRoutes from './routes/listings.js';
 import analyzeRoutes from './routes/analyze.js';
 import ingestListings, { pipelineEvents } from './services/ingest.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distPath = path.join(__dirname, '../client/dist');
 
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/JobLens';
@@ -45,6 +51,20 @@ function setupMiddleware(app) {
   app.use('/api', apiLimiter);
 }
 
+function setupRoutes(app) {
+  app.use('/api', listingsRoutes);
+  app.use('/api', analyzeRoutes);
+
+  // Serve static assets and SPA fallback from client/dist if present
+  app.use(express.static(distPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(distPath, 'index.html'), (err) => {
+      if (err) res.send('JobLens India API running');
+    });
+  });
+}
+
 function startWorkerServer() {
   const app = express();
   setupMiddleware(app);
@@ -53,9 +73,7 @@ function startWorkerServer() {
     .then(() => console.log(`[Server] Worker ${process.pid}: MongoDB connected`))
     .catch(err => console.error(`[Server] Worker ${process.pid}: MongoDB connection error:`, err));
 
-  app.use('/api', listingsRoutes);
-  app.use('/api', analyzeRoutes);
-  app.get('/', (req, res) => res.send('JobLens India API running'));
+  setupRoutes(app);
 
   app.listen(PORT, () => console.log(`[Server] Worker ${process.pid} listening on port ${PORT}`));
 }
@@ -105,9 +123,7 @@ if (ENABLE_CLUSTER && cluster.isPrimary) {
     })
     .catch(err => console.error('MongoDB connection error:', err));
 
-  app.use('/api', listingsRoutes);
-  app.use('/api', analyzeRoutes);
-  app.get('/', (req, res) => res.send('JobLens India API running'));
+  setupRoutes(app);
 
   // Scheduled ingestion every 6 hours
   cron.schedule('0 */6 * * *', () => {
