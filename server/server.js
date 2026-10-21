@@ -57,7 +57,7 @@ function setupRoutes(app) {
 
   // Serve static assets and SPA fallback from client/dist if present
   app.use(express.static(distPath));
-  app.get('*', (req, res, next) => {
+  app.use((req, res, next) => {
     if (req.path.startsWith('/api')) return next();
     res.sendFile(path.join(distPath, 'index.html'), (err) => {
       if (err) res.send('JobLens India API running');
